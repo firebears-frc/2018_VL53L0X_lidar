@@ -39,13 +39,13 @@ void loop() {
 //  } else {
 //    Serial.println(" out of range ");
 //  }
-  if (measure.RangeMilliMeter < 30) {
+  if (measure.RangeMilliMeter < 35) {
     digitalWrite(redLed, HIGH);
   }
   else {
     digitalWrite(redLed, LOW);
   }
-  if (measure.RangeMilliMeter < 180) {
+  if (measure.RangeMilliMeter < 200) {
     digitalWrite(greenLed, HIGH);
   }
   else {
@@ -54,4 +54,3 @@ void loop() {
   delay(250);
 
 }
-
