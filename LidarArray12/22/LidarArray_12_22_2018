@@ -1,0 +1,217 @@
+#include <Wire.h>
+#include <math.h>
+#include "Adafruit_VL53L0X.h"
+#define TCAADDR 0x70
+
+Adafruit_VL53L0X lox0 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox3 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox4 = Adafruit_VL53L0X();
+
+VL53L0X_RangingMeasurementData_t measure0;
+VL53L0X_RangingMeasurementData_t measure1;
+VL53L0X_RangingMeasurementData_t measure2;
+VL53L0X_RangingMeasurementData_t measure3;
+VL53L0X_RangingMeasurementData_t measure4;
+
+int PINS[5] = { 7, 6, 5, 4, 3};//pins array
+
+int litPins[5]
+
+float objectDepth = 100.0;//(mm) about 4 inches (from minimum distance)
+
+float lidarLocations[5]{50.8,25.4,0.0,-25.4,-50.8};//from left to right in mm
+
+float distances[5];// 
+
+float maxRange = 1150;
+
+void tcaselect(uint8_t i) {
+    if (i > 7) return;
+ 
+    Wire.beginTransmission(TCAADDR);
+    Wire.write(1 << i);
+    
+    Wire.endTransmission();
+}
+
+
+void setup() {
+  
+   Serial.begin(230400);
+   Serial.println("Lidar Array Test...");
+   Serial.println("");
+
+   pinMode(3, OUTPUT);
+   pinMode(4, OUTPUT);
+   pinMode(5, OUTPUT);
+   pinMode(6, OUTPUT);
+   pinMode(7, OUTPUT);
+   
+  tcaselect(0); //starts Lidar 0 
+  lox0.begin();
+  
+  tcaselect(1); //starts Lidar 1 
+  lox1.begin();
+
+  tcaselect(2); //starts Lidar 2
+  lox2.begin();
+
+  tcaselect(3); //starts Lidar 3
+  lox3.begin();
+
+  tcaselect(4); //starts Lidar 4
+  lox4.begin();
+}
+
+
+
+  void loop() {
+    float minDistance = 2000.0;//Place to start beyond any measurement
+    
+    //******************
+    tcaselect(0);  //gets the distance for Lidar 0
+    lox0.rangingTest(&measure0, false);
+
+    if (measure0.RangeStatus != 4) {  
+      distances[0] = measure0.RangeMilliMeter;    
+    }
+    
+    else {// phase failures have incorrect data
+      distances[0] = 1900.0;   
+      //Serial.println(" out of range0 ");
+    }
+
+    if(distances[0] < minDistance){
+      minDistance = distances[0];
+    }
+   /* Serial.print("Distance0 (mm): "); 
+    Serial.println(distances[0]);*/
+    
+    //******************
+    tcaselect(1);  //gets the distance for Lidar 1
+    lox1.rangingTest(&measure1, false);
+
+    if (measure1.RangeStatus != 4) {  
+      distances[1] = measure1.RangeMilliMeter;
+    }
+    
+    else {// phase failures have incorrect data
+      distances[1] = 1900.0;   
+      //Serial.println(" out of range1 ");
+    }
+
+    if(distances[1] < minDistance){
+      minDistance = distances[1];
+    }
+   /* Serial.print("Distance1 (mm): "); 
+    Serial.println(distances[1]);*/
+    
+    //******************
+    tcaselect(2);  //gets the distance for Lidar 2
+    lox2.rangingTest(&measure2, false);
+
+    if (measure2.RangeStatus != 4) {  
+      distances[2] = measure2.RangeMilliMeter;
+    }
+    
+    else {// phase failures have incorrect data
+      distances[2] = 1900.0;   
+      //Serial.println(" out of range2 ");
+    }
+
+    if(distances[2] < minDistance){
+      minDistance = distances[2];
+    }
+    /*Serial.print("Distance2 (mm): "); 
+    Serial.println(distances[2]);*/
+    
+    //******************
+    tcaselect(3);  //gets the distance for Lidar 3
+    lox3.rangingTest(&measure3, false);
+
+    if (measure3.RangeStatus != 4) {  
+      distances[3] = measure3.RangeMilliMeter;
+    }
+    
+    else {// phase failures have incorrect data
+      distances[3] = 1900.0;   
+      //Serial.println(" out of range3 ");
+    }
+
+    if(distances[3] < minDistance){
+      minDistance = distances[3];
+    }
+    /*Serial.print("Distance3 (mm): "); 
+    Serial.println(distances[3]);*/
+    
+    //******************
+    tcaselect(4);  //gets the distance for Lidar 4
+    lox4.rangingTest(&measure4, false);
+
+    if (measure4.RangeStatus != 4) {  
+      distances[4] = measure4.RangeMilliMeter;
+    }
+    
+    else {// phase failures have incorrect data
+      distances[4] = 1900.0;   
+      //Serial.println(" out of range4 ");      
+    }
+
+    if(distances[4] < minDistance){
+       minDistance = distances[4];
+    }
+    /*Serial.print("Distance4 (mm): "); 
+    Serial.println(distances[4]);
+    Serial.println(" ***** "); */
+
+
+
+
+    //***Find all Lidars within objectDepth of minDistance***
+    //**********Light appropriate lights*******************
+    int hits = 0;
+    minDistance = min(minDistance,maxRange);//Limit Min to maxRange
+    float maxDistance = minDistance + objectDepth;//Add objectDepth to Min
+    float lidarOffsetSum = 0.0;//Zero offset
+
+    
+    for (int i = 0; i < 5; i++ )  {
+      if (distances[i] < maxDistance && distances[i] <  maxRange ) {
+        lidarOffsetSum = lidarLocations[i] + lidarOffsetSum;
+        digitalWrite(PINS[i], HIGH);
+        hits++;
+        litPin[i] = 1;
+      }
+      else {
+        digitalWrite(PINS[i], LOW);
+        litPins[i] = 0;
+      }
+    }
+  
+  //***Print centerOffset from centerOffset and angle of object in front of Lidars***
+    double centerOffset  = lidarOffsetSum/ (float)hits;
+    double lidarMinDistance = minDistance;
+    float angle = atan2(centerOffset,lidarMinDistance) * 180.0/3.14159;
+    Serial.print("Center Offset mm : ");
+    Serial.print(centerOffset);
+    Serial.print(" Distance mm : ");
+    Serial.print(minDistance);
+    Serial.print(",   Angle : ");
+    Serial.println(angle);
+    Serial.println(" *************************** ");
+    Serial.println(" "); 
+  
+    //delay(10);
+    }
+
+    //If the width of your target is known in terms of lidar separations, 
+    //you can exdend the accuracy of extreme right and left angles.
+    //Say the object is large enough to "light" three Lidars at the center,
+    //and only the left lidar is "lit".  Add 2 more phantom lidar positions 
+    //on the left using the same separation distance as the real lidars.
+    //Calculate the lidarOffsetSum & centerOffset including the phantom lidars
+    // to get a more accurate angle.  
+    // the number of Lidars "lit" is the variable hits and their positions are in litPins[5]
+    //as a 1 in the "lit" positions. 
